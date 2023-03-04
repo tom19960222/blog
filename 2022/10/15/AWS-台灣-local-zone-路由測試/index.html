@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" integrity="sha256-/4UQcSmErDzPCMAiuOiWPVVsNN2s3ZY/NsmXNcj0IFc=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.yeekaros.net","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.15.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"${hits} 找到 ${time} 個結果","hits":"找到 ${hits} 個結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="其實這篇的內容早在 10&#x2F;6 就已經測完了，只是一直懶得動筆紀錄一下 Orz 先前就一直有聽說 AWS 有要開台灣區的意願，終於在 10&#x2F;6 看到 gslin 大大貼的 AWS 的台北區 (Local Zone) 開了，那當然要趕快來玩玩看啦 經過測試確實和 gslin 的另一篇 目前 AWS 台北區只能開 *.2xlarge 的機器 一樣，目前只能開 2xlarge 的機器還">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AWS 台灣 local zone 路由測試">
+<meta property="og:url" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/index.html">
+<meta property="og:site_name" content="爆頭的隨手記">
+<meta property="og:description" content="其實這篇的內容早在 10&#x2F;6 就已經測完了，只是一直懶得動筆紀錄一下 Orz 先前就一直有聽說 AWS 有要開台灣區的意願，終於在 10&#x2F;6 看到 gslin 大大貼的 AWS 的台北區 (Local Zone) 開了，那當然要趕快來玩玩看啦 經過測試確實和 gslin 的另一篇 目前 AWS 台北區只能開 *.2xlarge 的機器 一樣，目前只能開 2xlarge 的機器還">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E4%B8%AD%E8%8F%AF%E5%9B%BA%E5%AE%9A%E5%88%B6.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E4%B8%AD%E8%8F%AF%E5%9B%BA%E5%AE%9A%E5%88%B6.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E9%81%A0%E5%82%B3off-net.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E9%81%A0%E5%82%B3off-net.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E6%9D%BF%E6%A9%8B%E5%A4%A7%E5%A4%A7%E5%AF%AC%E9%A0%BB.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E6%9D%BF%E6%A9%8B%E5%A4%A7%E5%A4%A7%E5%AF%AC%E9%A0%BB.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0cloudflare-dns.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E9%81%A0%E5%82%B3SIP-gateway.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0Vultr%E6%97%A5%E6%9C%AC.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9EVultr%E6%97%A5%E6%9C%AC.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0STUIX-VPS.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9ESTUIX-VPS.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E5%AE%B6%E8%A3%A1-public-ip.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0Vultr%E6%97%A5%E6%9C%ACpublic-ip.png">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9EVultr%E6%97%A5%E6%9C%ACpublic-ip.png">
+<meta property="article:published_time" content="2022-10-15T08:49:16.000Z">
+<meta property="article:modified_time" content="2023-03-04T14:22:18.928Z">
+<meta property="article:author" content="YEEKaros">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6.png">
+
+
+<link rel="canonical" href="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/","path":"2022/10/15/AWS-台灣-local-zone-路由測試/","title":"AWS 台灣 local zone 路由測試"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>AWS 台灣 local zone 路由測試 | 爆頭的隨手記</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">爆頭的隨手記</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B8%AC%E8%A9%A6%E7%B5%90%E6%9E%9C"><span class="nav-number">1.</span> <span class="nav-text">測試結果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B3%B6%E5%85%A7%E5%AE%B6%E7%94%A8-x2F-%E5%95%86%E7%94%A8%E5%9B%BA%E7%B6%B2"><span class="nav-number">1.1.</span> <span class="nav-text">島內家用&#x2F;商用固網</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6-500M-x2F-250M"><span class="nav-number">1.1.1.</span> <span class="nav-text">中華非固定制 500M&#x2F;250M</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E8%8F%AF%E5%9B%BA%E5%AE%9A%E5%88%B6-500M-x2F-250M"><span class="nav-number">1.1.2.</span> <span class="nav-text">中華固定制 500M&#x2F;250M</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%A0%E5%82%B3%E5%9B%BA%E5%AE%9A%E5%88%B6-off-net-100M-x2F-100M"><span class="nav-number">1.1.3.</span> <span class="nav-text">遠傳固定制 off-net 100M&#x2F;100M</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%BF%E6%A9%8B%E5%A4%A7%E5%A4%A7%E5%AF%AC%E9%A0%BB-%E4%BA%9E%E5%A4%AA%E5%87%BA%E5%8F%A3-360M-x2F-120M"><span class="nav-number">1.1.4.</span> <span class="nav-text">板橋大大寬頻 亞太出口 360M&#x2F;120M</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%95%86%E6%A5%AD%E6%9C%8D%E5%8B%99"><span class="nav-number">1.2.</span> <span class="nav-text">商業服務</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Cloudflare-DNS"><span class="nav-number">1.2.1.</span> <span class="nav-text">Cloudflare DNS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%A0%E5%82%B3-SIP-gateway"><span class="nav-number">1.2.2.</span> <span class="nav-text">遠傳 SIP gateway</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%8B%E9%9A%9B"><span class="nav-number">1.3.</span> <span class="nav-text">國際</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Vultr-%E6%97%A5%E6%9C%AC"><span class="nav-number">1.3.1.</span> <span class="nav-text">Vultr 日本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E6%9C%89-IP-%E7%9B%B8%E9%97%9C"><span class="nav-number">1.4.</span> <span class="nav-text">自有 IP 相關</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#STUIX-VPS"><span class="nav-number">1.4.1.</span> <span class="nav-text">STUIX VPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%B6-IP-%E5%8F%B0%E5%8C%97"><span class="nav-number">1.4.2.</span> <span class="nav-text">自家 IP (台北)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%B6-IP-%E6%97%A5%E6%9C%AC"><span class="nav-number">1.4.3.</span> <span class="nav-text">自家 IP (日本)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B8%BD%E7%B5%90"><span class="nav-number">2.</span> <span class="nav-text">總結</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">YEEKaros</p>
+  <div class="site-description" itemprop="description">一個肥宅工程師的碎碎念</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.yeekaros.net/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="YEEKaros">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="爆頭的隨手記">
+      <meta itemprop="description" content="一個肥宅工程師的碎碎念">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="AWS 台灣 local zone 路由測試 | 爆頭的隨手記">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AWS 台灣 local zone 路由測試
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2022-10-15 16:49:16" itemprop="dateCreated datePublished" datetime="2022-10-15T16:49:16+08:00">2022-10-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新於</span>
+      <time title="修改時間：2023-03-04 22:22:18" itemprop="dateModified" datetime="2023-03-04T22:22:18+08:00">2023-03-04</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>其實這篇的內容早在 10&#x2F;6 就已經測完了，只是一直懶得動筆紀錄一下 Orz</p>
+<p>先前就一直有聽說 AWS 有要開台灣區的意願，終於在 10&#x2F;6 看到 gslin 大大貼的 <a target="_blank" rel="noopener" href="https://blog.gslin.org/archives/2022/10/06/10903/aws-%e7%9a%84%e5%8f%b0%e5%8c%97%e5%8d%80-local-zone-%e9%96%8b%e4%ba%86/">AWS 的台北區 (Local Zone) 開了</a>，那當然要趕快來玩玩看啦</p>
+<p>經過測試確實和 gslin 的另一篇 <a target="_blank" rel="noopener" href="https://blog.gslin.org/archives/2022/10/06/10905/%e7%9b%ae%e5%89%8d-aws-%e5%8f%b0%e5%8c%97%e5%8d%80%e5%8f%aa%e8%83%bd%e9%96%8b-2xlarge-%e7%9a%84%e6%a9%9f%e5%99%a8/">目前 AWS 台北區只能開 *.2xlarge 的機器</a> 一樣，目前只能開 2xlarge 的機器還不能開 spot instance，所以就開了一台 <code>m5.2xlarge</code> 來玩玩看，價格是 $0.62 USD&#x2F;hour</p>
+<p>因為公司有網路電話相關的業務放在 Cloud 上，SIP protocol 對延遲和掉包又比較敏感，當初也是因為這點才棄 AWS 改用 GCP 台灣區。這次就來簡單測試一下島內和國際路由吧！</p>
+<p>本次開出來的機器 IP 是 <code>15.220.83.12</code>，從 <a target="_blank" rel="noopener" href="https://bgp.he.net/ip/15.220.83.12">bgp.he.net</a> 來看，IP 段應該都在 <code>15.220.80.0/20</code> 內。</p>
+<h1 id="測試結果"><a href="#測試結果" class="headerlink" title="測試結果"></a>測試結果</h1><p>分成島內家用&#x2F;商用固網、商業服務、國際和自己在玩的自有 IP 相關的測試</p>
+<h2 id="島內家用-x2F-商用固網"><a href="#島內家用-x2F-商用固網" class="headerlink" title="島內家用&#x2F;商用固網"></a>島內家用&#x2F;商用固網</h2><h3 id="中華非固定制-500M-x2F-250M"><a href="#中華非固定制-500M-x2F-250M" class="headerlink" title="中華非固定制 500M&#x2F;250M"></a>中華非固定制 500M&#x2F;250M</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6.png" alt="到中華非固定制" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E4%B8%AD%E8%8F%AF%E9%9D%9E%E5%9B%BA%E5%AE%9A%E5%88%B6.png" alt="從中華非固定制" loading="lazy"></p>
+<h3 id="中華固定制-500M-x2F-250M"><a href="#中華固定制-500M-x2F-250M" class="headerlink" title="中華固定制 500M&#x2F;250M"></a>中華固定制 500M&#x2F;250M</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E4%B8%AD%E8%8F%AF%E5%9B%BA%E5%AE%9A%E5%88%B6.png" alt="到中華固定制" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E4%B8%AD%E8%8F%AF%E5%9B%BA%E5%AE%9A%E5%88%B6.png" alt="從中華固定制" loading="lazy"></p>
+<p>固定制和非固定制的表現差不多，可以很明顯的看出這次 local zone 的機房是<a target="_blank" rel="noopener" href="https://goo.gl/maps/ExigwJCmFcdv87Qq9">中華板橋 IDC</a></p>
+<h3 id="遠傳固定制-off-net-100M-x2F-100M"><a href="#遠傳固定制-off-net-100M-x2F-100M" class="headerlink" title="遠傳固定制 off-net 100M&#x2F;100M"></a>遠傳固定制 off-net 100M&#x2F;100M</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E9%81%A0%E5%82%B3off-net.png" alt="到遠傳 off-net" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E9%81%A0%E5%82%B3off-net.png" alt="從遠傳 off-net" loading="lazy"></p>
+<h3 id="板橋大大寬頻-亞太出口-360M-x2F-120M"><a href="#板橋大大寬頻-亞太出口-360M-x2F-120M" class="headerlink" title="板橋大大寬頻 亞太出口 360M&#x2F;120M"></a>板橋大大寬頻 亞太出口 360M&#x2F;120M</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E6%9D%BF%E6%A9%8B%E5%A4%A7%E5%A4%A7%E5%AF%AC%E9%A0%BB.png" alt="到板橋大大寬頻" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9E%E6%9D%BF%E6%A9%8B%E5%A4%A7%E5%A4%A7%E5%AF%AC%E9%A0%BB.png" alt="從板橋大大寬頻" loading="lazy"></p>
+<p>個人猜測 AWS 和中華、遠傳都有 PNI，和亞太則是透過 <code>EBIX</code> peer。不過 <code>EBIX</code> 也是亞太自家的，某種意義上也是和亞太直接接了條線了啦 (?)</p>
+<h2 id="商業服務"><a href="#商業服務" class="headerlink" title="商業服務"></a>商業服務</h2><h3 id="Cloudflare-DNS"><a href="#Cloudflare-DNS" class="headerlink" title="Cloudflare DNS"></a>Cloudflare DNS</h3><p>毫不意外的直連</p>
+<p><del>只有中華才會死不跟你在台灣  peer 啦</del></p>
+<p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0cloudflare-dns.png" alt="到cloudflare-dns" loading="lazy"></p>
+<h3 id="遠傳-SIP-gateway"><a href="#遠傳-SIP-gateway" class="headerlink" title="遠傳 SIP gateway"></a>遠傳 SIP gateway</h3><p>比較意外的是竟然是走中華到遠傳，不過延遲看起來沒啥問題，真的有需要或是有差的話不知道可不可以請他們調整路由?</p>
+<p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E9%81%A0%E5%82%B3SIP-gateway.png" alt="到遠傳SIP-gateway" loading="lazy"></p>
+<h2 id="國際"><a href="#國際" class="headerlink" title="國際"></a>國際</h2><h3 id="Vultr-日本"><a href="#Vultr-日本" class="headerlink" title="Vultr 日本"></a>Vultr 日本</h3><p>當時忘了多測一些服務了，只記得測了 Vultr 日本區，就加減看看吧</p>
+<p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0Vultr%E6%97%A5%E6%9C%AC.png" alt="到Vultr日本" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9EVultr%E6%97%A5%E6%9C%AC.png" alt="從Vultr日本" loading="lazy"></p>
+<p>看起來到日本是走 <code>PCCW</code>，算是優質的 T1 ISP，<del>總比 174 好了</del></p>
+<h2 id="自有-IP-相關"><a href="#自有-IP-相關" class="headerlink" title="自有 IP 相關"></a>自有 IP 相關</h2><p>順便幫忙宣傳一下，如果對擁有一段自己的 IP 有興趣，或是想要跟 AWS、Cloudflare、HE 接 direct peering 的，可以支持一下<a target="_blank" rel="noopener" href="https://seadog007.me/">海豹 (@seadog007)</a> 的 <a target="_blank" rel="noopener" href="https://stuix.io/">學生聯合交換中心 (STUIX)</a> 計畫，群裡也有 LIR 大佬們可以幫忙申請 ASN 和 IP，如有需要歡迎聯繫。</p>
+<h3 id="STUIX-VPS"><a href="#STUIX-VPS" class="headerlink" title="STUIX VPS"></a>STUIX VPS</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0STUIX-VPS.png" alt="到STUIX-VPS" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9ESTUIX-VPS.png" alt="從STUIX-VPS" loading="lazy"></p>
+<p>多虧 AWS 有接入 STUIX，基本上就是實體線路直接對接的延遲</p>
+<h3 id="自家-IP-台北"><a href="#自家-IP-台北" class="headerlink" title="自家 IP (台北)"></a>自家 IP (台北)</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0%E5%AE%B6%E8%A3%A1-public-ip.png" alt="到家裡-public-ip" loading="lazy"></p>
+<p>我自己沒有跟 AWS direct peer，不過感謝海豹幫我 transit 了。</p>
+<p><del>雖然我自己的內網路由很明顯噴到國外再噴回來了，有空再來修</del></p>
+<h3 id="自家-IP-日本"><a href="#自家-IP-日本" class="headerlink" title="自家 IP (日本)"></a>自家 IP (日本)</h3><p><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%88%B0Vultr%E6%97%A5%E6%9C%ACpublic-ip.png" alt="到Vultr日本public-ip" loading="lazy"><br><img src="/2022/10/15/AWS-%E5%8F%B0%E7%81%A3-local-zone-%E8%B7%AF%E7%94%B1%E6%B8%AC%E8%A9%A6/%E5%BE%9EVultr%E6%97%A5%E6%9C%ACpublic-ip.png" alt="從Vultr日本public-ip" loading="lazy"></p>
+<p>去程一樣是走 STUIX 到我的自有 IP，<del>回程則是走 Vultr -&gt; JPIX 到 AWS</del></p>
+<p>發現回程因為我自己網路炸了所以根本是走 Vultr 的 IP 出去的，<del>一樣有空再修吧，看起來又可以再來重蓋網路了</del></p>
+<h1 id="總結"><a href="#總結" class="headerlink" title="總結"></a>總結</h1><p>目前整體來說除了只能開 <code>2xlarge</code> 的機器以外沒啥好挑剔的，坐等台灣區從 local zone 晉升到 region 的那天 ヽ（。∀°）ノ</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/02/OpenVPN-%E6%87%B6%E4%BA%BA%E5%AE%89%E8%A3%9D%E6%B3%95/" rel="prev" title="OpenVPN 懶人安裝法">
+                  <i class="fa fa-chevron-left"></i> OpenVPN 懶人安裝法
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">YEEKaros</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

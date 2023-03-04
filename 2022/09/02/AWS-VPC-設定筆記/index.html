@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" integrity="sha256-/4UQcSmErDzPCMAiuOiWPVVsNN2s3ZY/NsmXNcj0IFc=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.yeekaros.net","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.15.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"${hits} 找到 ${time} 個結果","hits":"找到 ${hits} 個結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="緣起AWS VPC 在管理複雜的網路設置時確實是個強大的工具，對於我這種喜歡把東西分門別類放得很漂亮，就連機器也不放過的人來說規劃實作起來真的很爽，不過也因為設定實在太細了，一段時間沒做又因為專案需求需要實作時就會漏東漏西，那就來寫一篇筆記給未來的自己當作參考吧。 我才不會說是因為自己多犯了好幾個蠢，多 debug 了 3 小時才來寫筆記勒 情境本次預計實作的架構如下：  VPC 使用網段 10.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AWS VPC 設定筆記">
+<meta property="og:url" content="https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/index.html">
+<meta property="og:site_name" content="爆頭的隨手記">
+<meta property="og:description" content="緣起AWS VPC 在管理複雜的網路設置時確實是個強大的工具，對於我這種喜歡把東西分門別類放得很漂亮，就連機器也不放過的人來說規劃實作起來真的很爽，不過也因為設定實在太細了，一段時間沒做又因為專案需求需要實作時就會漏東漏西，那就來寫一篇筆記給未來的自己當作參考吧。 我才不會說是因為自己多犯了好幾個蠢，多 debug 了 3 小時才來寫筆記勒 情境本次預計實作的架構如下：  VPC 使用網段 10.">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/2021091301-AWSELB.png">
+<meta property="article:published_time" content="2022-09-02T11:38:02.000Z">
+<meta property="article:modified_time" content="2023-03-04T14:22:18.928Z">
+<meta property="article:author" content="YEEKaros">
+<meta property="article:tag" content="AWS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/2021091301-AWSELB.png">
+
+
+<link rel="canonical" href="https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/","path":"2022/09/02/AWS-VPC-設定筆記/","title":"AWS VPC 設定筆記"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>AWS VPC 設定筆記 | 爆頭的隨手記</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">爆頭的隨手記</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B7%A3%E8%B5%B7"><span class="nav-number">1.</span> <span class="nav-text">緣起</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%83%85%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">情境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A%E6%AD%A5%E9%A9%9F"><span class="nav-number">3.</span> <span class="nav-text">設定步驟</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%96%B0%E5%A2%9E-VPC"><span class="nav-number">3.1.</span> <span class="nav-text">1. 新增 VPC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BF%AE%E6%94%B9-VPC-%E7%9A%84-DNS-%E7%9B%B8%E9%97%9C%E8%A8%AD%E5%AE%9A"><span class="nav-number">3.2.</span> <span class="nav-text">2. 修改 VPC 的 DNS 相關設定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%96%B0%E5%A2%9E-subnet"><span class="nav-number">3.3.</span> <span class="nav-text">3. 新增 subnet</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E5%88%A5%E6%B3%A8%E6%84%8F"><span class="nav-number">3.3.1.</span> <span class="nav-text">特別注意</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%BF%AE%E6%94%B9-subnet-%E8%A8%AD%E5%AE%9A"><span class="nav-number">3.4.</span> <span class="nav-text">4. 修改 subnet 設定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%96%B0%E5%A2%9E-Route-Table"><span class="nav-number">3.5.</span> <span class="nav-text">5. 新增 Route Table</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%96%B0%E5%A2%9E-Internet-Gateway-%E4%B8%A6-attach-%E5%88%B0-VPC"><span class="nav-number">3.6.</span> <span class="nav-text">6. 新增 Internet Gateway 並 attach 到 VPC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E6%96%B0%E5%A2%9E-default-gateway"><span class="nav-number">3.7.</span> <span class="nav-text">7. 新增 default gateway</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E6%96%B0%E5%A2%9E-Security-Group-%E8%88%87%E8%A6%8F%E5%89%87"><span class="nav-number">3.8.</span> <span class="nav-text">8. 新增 Security Group 與規則</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-%E6%96%B0%E5%A2%9E%E5%85%81%E8%A8%B1%E8%87%AA%E5%B7%B1%E9%80%A3%E5%88%B0%E8%87%AA%E5%B7%B1%E7%9A%84-Security-Group-%E7%9A%84%E8%A6%8F%E5%89%87"><span class="nav-number">3.9.</span> <span class="nav-text">9. 新增允許自己連到自己的 Security Group 的規則</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%81%AD%E5%96%9C%E6%90%9E%E5%AE%9A"><span class="nav-number">4.</span> <span class="nav-text">恭喜搞定</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">YEEKaros</p>
+  <div class="site-description" itemprop="description">一個肥宅工程師的碎碎念</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.yeekaros.net/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="YEEKaros">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="爆頭的隨手記">
+      <meta itemprop="description" content="一個肥宅工程師的碎碎念">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="AWS VPC 設定筆記 | 爆頭的隨手記">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AWS VPC 設定筆記
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2022-09-02 19:38:02" itemprop="dateCreated datePublished" datetime="2022-09-02T19:38:02+08:00">2022-09-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新於</span>
+      <time title="修改時間：2023-03-04 22:22:18" itemprop="dateModified" datetime="2023-03-04T22:22:18+08:00">2023-03-04</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="緣起"><a href="#緣起" class="headerlink" title="緣起"></a>緣起</h1><p>AWS VPC 在管理複雜的網路設置時確實是個強大的工具，對於我這種喜歡把東西分門別類放得很漂亮，就連機器也不放過的人來說規劃實作起來真的很爽，不過也因為設定實在太細了，一段時間沒做又因為專案需求需要實作時就會漏東漏西，那就來寫一篇筆記給未來的自己當作參考吧。</p>
+<p><del>我才不會說是因為自己多犯了好幾個蠢，多 debug 了 3 小時才來寫筆記勒</del></p>
+<h1 id="情境"><a href="#情境" class="headerlink" title="情境"></a>情境</h1><p>本次預計實作的架構如下：</p>
+<ol>
+<li>VPC 使用網段 10.9.0.0&#x2F;16</li>
+<li>subnet 一共 6 個，每個都拿一段 &#x2F;24，分為 ELB 用 2 個 + EC2 用 2 個 + RDS 用 2 個，每個都要在不同 AZ (為了每個服務都可以開 HA)</li>
+<li>Security Group 一共 3 個，分別給 ELB (HTTP + HTTPS)、EC2 (HTTP + SSH)、RDS (PostgreSQL) 用</li>
+</ol>
+<h1 id="設定步驟"><a href="#設定步驟" class="headerlink" title="設定步驟"></a>設定步驟</h1><p>好啦，規劃好了就可以開始設定了</p>
+<h2 id="1-新增-VPC"><a href="#1-新增-VPC" class="headerlink" title="1. 新增 VPC"></a>1. 新增 VPC</h2><p>有需要 IPv6 的話記得在 <code>IPv6 CIDR block</code> 選 <code>Amazon-provided IPv6 CIDR block</code>，不然選 <code>No IPv6 CIDR block</code> 的話就是 IPv4 only 了</p>
+<p>我個人習慣用 <code>專案名稱-環境名稱 (production / staging)</code> 來當 VPC 的名稱</p>
+<h2 id="2-修改-VPC-的-DNS-相關設定"><a href="#2-修改-VPC-的-DNS-相關設定" class="headerlink" title="2. 修改 VPC 的 DNS 相關設定"></a>2. 修改 VPC 的 DNS 相關設定</h2><p>選擇單個 VPC 以後在 </p>
+<ul>
+<li>Actions -&gt; <code>Edit DNS hostnames</code> </li>
+<li>Actions -&gt; <code>Edit DNS resolution</code></li>
+</ul>
+<p>兩項裡面分別把功能啟用</p>
+<p>從 <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html">AWS 的文件</a> 來看，<code>DNS resolution</code> 的設定是用來開關此 VPC 裡面私有域名的解析 (如 <code>ip-10-9-1-123.ap-northeast-1.compute.internal</code> 這樣的 domain)，同時也影響 AWS 會不會幫你放一台 DNS Server 在你的 VPC 裡面</p>
+<p>另外 <code>DNS hostnames</code> 的設定是用來開關在這個 VPC 裡面拿到 public ip 的機器會不會一起拿到一個解析到該 public ip 的 domain (如 <code>ec2-18-123-123-123.ap-northeast-1.compute.amazonaws.com</code> 這樣的 domain)</p>
+<p>主要是為了使用 Elastic Beanstalk 來部署應用程式這邊的設定才一定要開，不過為了方便個人是都會開著</p>
+<h2 id="3-新增-subnet"><a href="#3-新增-subnet" class="headerlink" title="3. 新增 subnet"></a>3. 新增 subnet</h2><p>記得如果要做 HA 的話，同個服務內的每個 subnet 要放在不同的 AZ，不然假設一個 AZ 炸了你的服務還是照樣炸開。</p>
+<p>當然如果你遇上了日本沉沒還是救不了你，不過反正最頭痛的也不會是你 (茶。</p>
+<p>個人習慣用 <code>專案名稱-環境名稱-放的服務 (elb / ec2 / rds)-編號 (2位數字)</code> 來命名</p>
+<h3 id="特別注意"><a href="#特別注意" class="headerlink" title="特別注意"></a><strong>特別注意</strong></h3><p>這次新踩到的坑，如果你有用 Elastic Beanstalk 來幫你部署 ELB，或是 ELB 的 target 是用 <code>instance</code> 而不是 <code>ip</code> 的話，要注意 ELB 所使用的 subnet 的 AZ 要和 EC2 subnet 的 AZ 一樣或是完全涵蓋<br>(ex: ELB 用 <code>ap-northeast-1a</code> + <code>ap-northeast-1b</code> + <code>ap-northeast-1d</code>，EC2 用 <code>ap-northeast-1a</code> + <code>ap-northeast-1d</code>)</p>
+<p>不然在 Target Group 裡你的 target 註冊上去以後狀態會是 <code>unused</code>，說明顯示 <code>Target is in an Availability Zone that is not enabled for the load balancer</code>。實際連線看看的話當然是完全連不到。<br><img src="/2022/09/02/AWS-VPC-%E8%A8%AD%E5%AE%9A%E7%AD%86%E8%A8%98/2021091301-AWSELB.png" loading="lazy"></p>
+<h2 id="4-修改-subnet-設定"><a href="#4-修改-subnet-設定" class="headerlink" title="4. 修改 subnet 設定"></a>4. 修改 subnet 設定</h2><p>如果你希望這個 subnet 的機器都自動拿到一個 public ip，可以在 Actions -&gt; <code>Modify auto-assign IP settings</code> 裡面打開他</p>
+<h2 id="5-新增-Route-Table"><a href="#5-新增-Route-Table" class="headerlink" title="5. 新增 Route Table"></a>5. 新增 Route Table</h2><h2 id="6-新增-Internet-Gateway-並-attach-到-VPC"><a href="#6-新增-Internet-Gateway-並-attach-到-VPC" class="headerlink" title="6. 新增 Internet Gateway 並 attach 到 VPC"></a>6. 新增 Internet Gateway 並 attach 到 VPC</h2><h2 id="7-新增-default-gateway"><a href="#7-新增-default-gateway" class="headerlink" title="7. 新增 default gateway"></a>7. 新增 default gateway</h2><p>在剛剛新增的 Route Table 裡面新增 default gateway (Destination 為 <code>0.0.0.0/0</code>，target 為剛剛新增的 Internet Gateway)</p>
+<p>如果你忘了新增又剛好像我一樣直接用了 Elastic Beanstalk 部署的話，那就會產生一個很詭異的情形是部署跑很久都不會成功，想 SSH 進 EC2 機器鳥都不鳥你，那就要想想是不是自己犯蠢了</p>
+<h2 id="8-新增-Security-Group-與規則"><a href="#8-新增-Security-Group-與規則" class="headerlink" title="8. 新增 Security Group 與規則"></a>8. 新增 Security Group 與規則</h2><p>除了服務會用到的 port (如 HTTP&#x2F;HTTPS) 以外，要注意允許其他 Security Group 來的連線 (ex: RDS 的 Security Group 要允許 EC2 的 Security Group 來的連線)</p>
+<p>如果有直接連入 debug 之類的需求，我習慣會把公司對外的固定 IP 設定成允許直接連入，不過這部分就看你如何拿捏安全性和方便了</p>
+<p>個人習慣用 <code>專案名稱-環境名稱-放的服務</code> 來命名</p>
+<h2 id="9-新增允許自己連到自己的-Security-Group-的規則"><a href="#9-新增允許自己連到自己的-Security-Group-的規則" class="headerlink" title="9. 新增允許自己連到自己的 Security Group 的規則"></a>9. 新增允許自己連到自己的 Security Group 的規則</h2><p>如果不允許的話在機器上用自己的 public ip 連線到自己會被防火牆擋下來，然後你就會一頭霧水。Elastic Beanstalk 之類的工具遇到這類問題尤其難 debug，他看起來就是莫名不會動</p>
+<h1 id="恭喜搞定"><a href="#恭喜搞定" class="headerlink" title="恭喜搞定"></a>恭喜搞定</h1><p>好了，設定大致上就到這邊結束，恭喜你搞定了網路設定，到了會用這種規模的應用程式，搞定網路以後還有更多問題等著你呢 (?</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AWS/" rel="tag"># AWS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/01/%E5%88%9D%E6%8E%A2-Wireguard/" rel="prev" title="初探 Wireguard">
+                  <i class="fa fa-chevron-left"></i> 初探 Wireguard
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/02/OpenVPN-%E6%87%B6%E4%BA%BA%E5%AE%89%E8%A3%9D%E6%B3%95/" rel="next" title="OpenVPN 懶人安裝法">
+                  OpenVPN 懶人安裝法 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">YEEKaros</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
